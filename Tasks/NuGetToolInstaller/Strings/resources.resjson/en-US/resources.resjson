@@ -1,0 +1,14 @@
+{
+  "loc.friendlyName": "NuGet Tool Installer",
+  "loc.helpMarkDown": "",
+  "loc.description": "Finds or downloads and caches specified version spec of NuGet and adds it to the PATH.",
+  "loc.instanceNameFormat": "Use NuGet $(versionSpec)",
+  "loc.input.label.versionSpec": "Version Spec",
+  "loc.input.help.versionSpec": "Version Spec of version to get.  Examples: 6.x, 4.x, 6.10.0, >=6.10.0",
+  "loc.input.label.stableOnly": "Stable Only",
+  "loc.input.help.stableOnly": "Specifies whether the version resolution will filter to stable only versions.",
+  "loc.messages.ToolFailed": "Tool install failed: %s",
+  "loc.messages.Info_AvailableVersions": "The available versions are: %s",
+  "loc.messages.Warning_NoVersionWasFoundWhichMatches": "No version was found which matches the input %s",
+  "loc.messages.Warning_NoUrlWasFoundWhichMatches": "No download URL was found for %s"
+}

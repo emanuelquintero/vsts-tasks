@@ -1,0 +1,52 @@
+{
+    "id": "2C65196A-54FD-4A02-9BE8-D9D1837B7C5D",
+    "name": "NuGetToolInstaller",
+    "friendlyName": "NuGet Tool Installer",
+    "description": "Finds or downloads and caches specified version spec of NuGet and adds it to the PATH.",
+    "helpMarkDown": "",
+    "category": "Tool",
+    "runsOn": [
+        "Agent",
+        "DeploymentGroup"
+    ],
+    "author": "Microsoft Corporation",
+    "version": {
+        "Major": 0,
+        "Minor": 1,
+        "Patch": 0
+    },
+    "preview": true,
+    "capabilities": ["NuGet"],
+    "demands": [],
+    "instanceNameFormat": "Use NuGet $(versionSpec)",
+    "inputs": [
+        {
+            "name": "versionSpec",
+            "type": "string",
+            "label": "Version Spec",
+            "defaultValue": "3.5.x",
+            "required": true,
+            "helpMarkDown": "Version Spec of version to get.  Examples: 6.x, 4.x, 6.10.0, >=6.10.0"
+        },
+        {
+            "name": "stableOnly",
+            "type": "boolean",
+            "label": "Stable Only",
+            "defaultValue": "false",
+            "required": false,
+            "helpMarkDown": "Specifies whether the version resolution will filter to stable only versions."
+        }
+    ],
+    "execution": {
+        "Node": {
+            "target": "nugetToolInstaller.js",
+            "argumentFormat": ""
+        }
+    },
+    "messages": {
+        "ToolFailed": "Tool install failed: %s",
+        "Info_AvailableVersions": "The available versions are: %s",
+        "Warning_NoVersionWasFoundWhichMatches": "No version was found which matches the input %s",
+        "Warning_NoUrlWasFoundWhichMatches": "No download URL was found for %s"
+    }
+}
