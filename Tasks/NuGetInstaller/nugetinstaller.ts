@@ -118,23 +118,19 @@ async function main(): Promise<void> {
 
         let configFile = nugetConfigPath;
         let credCleanup = () => { return; };
-        if (useCredConfig) {
-            if (nugetConfigPath) {
-                let nuGetConfigHelper = new NuGetConfigHelper(
-                    nuGetPath,
-                    nugetConfigPath,
-                    authInfo,
-                    environmentSettings);
-                const packageSources = await nuGetConfigHelper.getSourcesFromConfig();
+        
+        if (nugetConfigPath) {
+            let nuGetConfigHelper = new NuGetConfigHelper(
+                nuGetPath,
+                nugetConfigPath,
+                authInfo,
+                environmentSettings);
+            const packageSources = await nuGetConfigHelper.getSourcesFromConfig();
 
-                if (packageSources.length !== 0) {
-                    nuGetConfigHelper.setSources(packageSources);
-                    credCleanup = () => tl.rmRF(nuGetConfigHelper.tempNugetConfigPath, true);
-                    configFile = nuGetConfigHelper.tempNugetConfigPath;
-                }
-            }
-            else {
-                tl._writeLine(tl.loc("Warning_NoConfigForNoCredentialProvider"));
+            if (packageSources.length !== 0) {
+                nuGetConfigHelper.setSources(packageSources, useCredConfig);
+                credCleanup = () => tl.rmRF(nuGetConfigHelper.tempNugetConfigPath, true);
+                configFile = nuGetConfigHelper.tempNugetConfigPath;
             }
         }
 

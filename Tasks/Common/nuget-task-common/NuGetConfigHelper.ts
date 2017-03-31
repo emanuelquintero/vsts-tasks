@@ -6,11 +6,18 @@ import * as tl from "vsts-task-lib/task";
 import * as auth from "./Authentication";
 import * as ngToolRunner from "./NuGetToolRunner";
 
+import { EndpointAuthorization } from "vsts-task-lib/task";
+
 let xmlreader = require("xmlreader");
 
 export interface IPackageSource {
     feedName: string;
     feedUri: string;
+}
+
+interface AuthParameters {
+    username: string;
+    password: string;
 }
 
 export class NuGetConfigHelper {
@@ -47,7 +54,7 @@ export class NuGetConfigHelper {
         }
     }
 
-    public setSources(packageSources: IPackageSource[]): void {
+    public setSources(packageSources: IPackageSource[], includeAuthForInternalFeeds: boolean): void {
         this.ensureTempConfigCreated();
 
         // remove sources
@@ -56,7 +63,7 @@ export class NuGetConfigHelper {
 
         // add sources
         tl._writeLine(tl.loc("NGCommon_AddingSources"));
-        this.addSourcesInNugetConfig(packageSources);
+        this.addSourcesInNugetConfig(packageSources, includeAuthForInternalFeeds);
     }
 
     public getSourcesFromConfig(): Q.Promise<IPackageSource[]> {
@@ -103,9 +110,9 @@ export class NuGetConfigHelper {
 
                     packageSource = { feedName: sourceKey, feedUri: sourceValue };
 
+                    packageSources.push(packageSource);
                     // check if need to add credential to feed
                     if (this.shouldGetCredentialsForFeed(packageSource)) {
-                        packageSources.push(packageSource);
                     }
                 }
 
@@ -130,8 +137,21 @@ export class NuGetConfigHelper {
         });
     }
 
-    private addSourcesInNugetConfig(packageSources: IPackageSource[]) {
+    private addSourcesInNugetConfig(packageSources: IPackageSource[], includeAuthForInternalFeeds: boolean) {
         packageSources.forEach((source) => {
+            let auth: AuthParameters = {} as AuthParameters;
+
+            if (this.shouldGetCredentialsForFeed(source) && includeAuthForInternalFeeds) {
+                auth.username = "VssSessionToken";
+                auth.password = this.authInfo.accessToken;
+            }
+            else if (this.TryGetCredentialsFromServiceEndpoint(source, auth)){
+                tl._writeLine(tl.loc("NGCommon_AcquiredCredentialsFromServiceEndpoint", source.feedName));
+            }
+            else{
+                auth = undefined;
+            }
+
             let nugetTool = ngToolRunner.createNuGetToolRunner(this.nugetPath, this.environmentSettings);
 
             nugetTool.arg("sources");
@@ -141,12 +161,15 @@ export class NuGetConfigHelper {
             nugetTool.arg(source.feedName);
             nugetTool.arg("-Source");
             nugetTool.arg(source.feedUri);
-            nugetTool.arg("-Username");
-            nugetTool.arg("VssSessionToken");
-            nugetTool.arg("-Password");
-            nugetTool.arg(this.authInfo.accessToken);
             nugetTool.arg("-ConfigFile");
             nugetTool.arg(this.tempNugetConfigPath);
+
+            if(auth){
+                nugetTool.arg("-Username");
+                nugetTool.arg(auth.username);
+                nugetTool.arg("-Password");
+                nugetTool.arg(auth.password);
+            }
 
             if (tl.osType() !== 'Windows_NT') {
                 // only Windows supports DPAPI. Older NuGets fail to add credentials at all if DPAPI fails. 
@@ -156,6 +179,17 @@ export class NuGetConfigHelper {
             // short run, use execSync
             nugetTool.execSync();
         });
+    }
+
+    private TryGetCredentialsFromServiceEndpoint(packageSource: IPackageSource, authParameters: AuthParameters): boolean {
+        let auth: EndpointAuthorization = tl.getEndpointAuthorization(packageSource.feedName, true);
+        if (auth) {
+            authParameters.username = auth.parameters["username"];
+            authParameters.password = auth.parameters["password"];
+            return true;
+        }
+
+        return false;
     }
 
     private shouldGetCredentialsForFeed(source: IPackageSource): boolean {
